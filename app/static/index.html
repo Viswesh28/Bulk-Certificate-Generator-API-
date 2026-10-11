@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate Register</title>
+<style>
+  /* No web fonts: this page must render inside a sandboxed preview. */
+  :root {
+    --paper: #f4f0e6;
+    --paper-deep: #ebe5d4;
+    --ink: #1c1a16;
+    --muted: #716a5c;
+    --rule: rgba(28, 26, 22, 0.22);
+    --issued: #2d5130;
+    --rejected: #8c2b1f;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- top strip ---------- */
+  .strip {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 14px 0 10px; font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted);
+  }
+  .strip a { text-decoration: none; border-bottom: 1px solid var(--rule); }
+  .strip a:hover { border-bottom-color: var(--ink); }
+
+  /* ---------- masthead ---------- */
+  header.mast { border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 22px 0 18px; margin-bottom: 6px; }
+  header.mast .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  header.mast h1 {
+    margin: 6px 0 8px; font-weight: 400; font-size: clamp(38px, 6vw, 64px);
+    line-height: 1; letter-spacing: -0.01em;
+  }
+  header.mast p { margin: 0; max-width: 62ch; color: var(--muted); font-style: italic; }
+  .rule-double { border-bottom: 1px solid var(--ink); height: 4px; border-top: 1px solid var(--ink); margin-bottom: 30px; }
+
+  /* ---------- layout ---------- */
+  .grid { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 56px; align-items: start; padding-bottom: 60px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; gap: 40px; } }
+
+  h2 {
+    margin: 0 0 14px; font-weight: 400; font-size: 13px; letter-spacing: 0.1em;
+    text-transform: uppercase; font-family: var(--mono); color: var(--muted);
+    display: flex; gap: 10px; align-items: baseline;
+  }
+  h2 .n { color: var(--ink); }
+  section + section { margin-top: 34px; }
+
+  /* ---------- form ---------- */
+  .field { display: block; margin-bottom: 16px; }
+  .field > span { display: block; font-size: 14px; font-style: italic; color: var(--muted); margin-bottom: 2px; }
+  .field > span em { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--rejected); margin-left: 4px; }
+  input[type="text"], input[type="date"], textarea {
+    width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--ink);
+    padding: 6px 0; border-radius: 0; outline: none;
+  }
+  input:focus, textarea:focus { background: var(--paper-deep); }
+  input[type="date"] { font-family: var(--mono); font-size: 15px; }
+  textarea { min-height: 170px; resize: vertical; font-family: var(--mono); font-size: 14px; line-height: 1.6;
+             border: 1px solid var(--rule); padding: 10px 12px; background: rgba(255,255,255,0.35); }
+  textarea:focus { border-color: var(--ink); background: rgba(255,255,255,0.6); }
+  .hint { font-size: 14px; color: var(--muted); margin: 6px 0 0; font-style: italic; }
+  .row-tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .count { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .file-link { font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; padding: 0; }
+  input[type="file"] { display: none; }
+
+  .actions { display: flex; align-items: center; gap: 18px; margin-top: 22px; flex-wrap: wrap; }
+  .btn {
+    background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 0;
+    padding: 12px 22px; font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .btn:hover { background: #000; }
+  .btn:disabled { opacity: 0.45; cursor: progress; }
+  .btn.ghost { background: transparent; color: var(--ink); }
+  .btn.ghost:hover { background: var(--paper-deep); }
+  .err { color: var(--rejected); white-space: pre-line; margin: 14px 0 0; font-size: 15px; min-height: 0; }
+  .err:empty { display: none; }
+
+  /* ---------- batch header ---------- */
+  .batch { border-top: 1px solid var(--ink); padding-top: 16px; }
+  .batch-title { font-size: 30px; line-height: 1.15; margin: 0 0 4px; font-weight: 400; }
+  .batch-meta { font-size: 14px; color: var(--muted); font-style: italic; }
+  .batch-id { font-family: var(--mono); font-size: 12px; color: var(--muted); word-break: break-all; }
+
+  .status {
+    display: inline-block; border: 1px solid var(--ink); padding: 3px 9px; font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 10px;
+  }
+  .status[data-s="completed"] { border-color: var(--issued); color: var(--issued); }
+  .status[data-s="failed"] { border-color: var(--rejected); color: var(--rejected); }
+  .status[data-s="completed_with_errors"] { border-color: var(--ink); }
+
+  .progress { margin: 22px 0 6px; height: 10px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); position: relative; }
+  .progress > div { height: 100%; width: 0; background: var(--ink); transition: width .4s ease; }
+  .progress-line { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  .tally { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  .tally > div { padding: 12px 0 10px; }
+  .tally > div + div { border-left: 1px solid var(--rule); padding-left: 16px; }
+  .tally b { display: block; font-weight: 400; font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tally span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .tally .issued b { color: var(--issued); }
+  .tally .rejected b { color: var(--rejected); }
+
+  .job-error { color: var(--rejected); margin-top: 12px; }
+  .zip { display: inline-block; margin-top: 16px; font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ---------- tables ---------- */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); padding: 10px 10px 8px 0; border-bottom: 1px solid var(--ink);
+  }
+  td { padding: 10px 10px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td.num, .num { font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  td.note { font-size: 14px; color: var(--rejected); }
+  .muted { color: var(--muted); }
+  td a { font-family: var(--mono); font-size: 13px; }
+
+  .stamp {
+    display: inline-block; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; border: 1px solid currentColor; padding: 2px 6px; white-space: nowrap;
+  }
+  .stamp[data-status="generated"] { color: var(--issued); }
+  .stamp[data-status="failed"] { color: var(--rejected); }
+  .stamp[data-status="pending"], .stamp[data-status="processing"] { color: var(--muted); border-style: dashed; }
+
+  .empty { padding: 28px 0; color: var(--muted); font-style: italic; border-bottom: 1px solid var(--rule); }
+
+  .table-scroll { overflow-x: auto; max-height: 520px; overflow-y: auto; }
+  .table-scroll thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; }
+
+  .ledger-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 10px; }
+  .ledger-head h2 { margin: 0; }
+
+  /* ---------- history ---------- */
+  footer { border-top: 3px solid var(--ink); padding: 26px 0 60px; }
+  footer h2 { margin-bottom: 8px; }
+  footer table td:first-child, footer table th:first-child { white-space: nowrap; }
+  button.link {
+    background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--mono); font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.06em; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .sample { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="strip">
+    <span>Bulk certificate issue</span>
+    <span><a href="/docs">API reference</a> &nbsp;·&nbsp; <a href="/health">health</a></span>
+  </div>
+
+  <header class="mast">
+    <div class="kicker">Batch register</div>
+    <h1>Certificate Register</h1>
+    <p>Issue one certificate per recipient, in a single batch. Every row is checked on its own, so a bad row is rejected without holding up the others.</p>
+  </header>
+  <div class="rule-double"></div>
+
+  <main class="grid">
+    <!-- ============ ISSUE FORM ============ -->
+    <div>
+      <form id="form" novalidate>
+        <section>
+          <h2><span class="n">1.</span> Details</h2>
+          <label class="field"><span>Course title<em>required</em></span>
+            <input type="text" id="course" maxlength="200" autocomplete="off">
+          </label>
+          <label class="field"><span>Issuing organisation<em>required</em></span>
+            <input type="text" id="issuer" maxlength="200" autocomplete="off">
+          </label>
+          <label class="field"><span>Date of issue</span>
+            <input type="date" id="date">
+          </label>
+          <label class="field"><span>Signatory name</span>
+            <input type="text" id="signatory" maxlength="200" autocomplete="off">
+          </label>
+          <label class="field"><span>Signatory title</span>
+            <input type="text" id="sigtitle" maxlength="200" autocomplete="off">
+          </label>
+        </section>
+
+        <section>
+          <h2><span class="n">2.</span> Recipients</h2>
+          <textarea id="list" spellcheck="false" placeholder="Full name, email&#10;Alice Smith, alice@example.com&#10;Carol White"></textarea>
+          <div class="row-tools">
+            <span class="count" id="rowCount">No recipients read yet</span>
+            <span>
+              <label class="file-link">Load CSV
+                <input type="file" id="csv" accept=".csv,text/csv,text/plain">
+              </label>
+              &nbsp;&nbsp;
+              <button type="button" class="sample" id="fillSample">Fill sample</button>
+            </span>
+          </div>
+          <p class="hint">One recipient per line. The email is optional. A CSV may have a header row of <code>full_name,email</code>.</p>
+        </section>
+
+        <div class="actions">
+          <button class="btn" type="submit" id="submit">Submit batch</button>
+        </div>
+        <div class="err" id="formError"></div>
+      </form>
+    </div>
+
+    <!-- ============ REGISTER ============ -->
+    <div>
+      <div class="batch" id="batch" hidden>
+        <h2 style="margin-bottom:6px">Current batch</h2>
+        <h3 class="batch-title" id="batchTitle"></h3>
+        <div class="batch-meta" id="batchMeta"></div>
+        <div class="batch-id" id="batchId"></div>
+        <span class="status" id="jobStatus" data-s="">Queued</span>
+
+        <div class="progress"><div id="bar"></div></div>
+        <div class="progress-line"><span id="progressText">0% processed</span><span id="progressNote"></span></div>
+
+        <div class="tally">
+          <div class="issued"><b id="cIssued">0</b><span>Issued</span></div>
+          <div class="rejected"><b id="cRejected">0</b><span>Rejected</span></div>
+          <div><b id="cTotal">0</b><span>Recipients</span></div>
+        </div>
+        <div class="job-error" id="jobError"></div>
+        <a class="zip" id="zip" hidden>Download all as ZIP</a>
+      </div>
+
+      <div id="ledgerWrap" hidden style="margin-top:34px">
+        <div class="ledger-head">
+          <h2><span class="n">3.</span> Ledger</h2>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>No.</th><th>Name</th><th>Email</th><th>Result</th><th>Reason</th><th>File</th></tr>
+            </thead>
+            <tbody id="ledger"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="noBatch" class="empty">No batch open. Submit one, or pick a recent batch below.</div>
+    </div>
+  </main>
+
+  <footer>
+    <h2>Recent batches</h2>
+    <table>
+      <thead><tr><th>Submitted</th><th>Course</th><th>Status</th><th>Issued / total</th><th></th></tr></thead>
+      <tbody id="recent"><tr><td colspan="5" class="muted">Loading</td></tr></tbody>
+    </table>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const API = "/api/v1";
+  const PAGE = 200;
+  const TERMINAL = new Set(["completed", "completed_with_errors", "failed"]);
+  const STATUS_LABEL = {
+    queued: "Queued", processing: "Processing", completed: "Complete",
+    completed_with_errors: "Complete, with rejections", failed: "Failed",
+  };
+  const ROW_LABEL = { pending: "Waiting", processing: "Rendering", generated: "Issued", failed: "Rejected" };
+  const SAMPLE = [
+    "Full name, email",
+    "Alice Smith, alice@example.com",
+    "Bob Jones, bob@example.com",
+    "Carol White,",
+    "Alice Smith, alice@example.com",
+  ].join("\n");
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtTime = (s) => new Date(s.endsWith("Z") ? s : s + "Z")
+    .toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+  let watchTimer = null;
+  let activeJobId = null;
+
+  // ---------- CSV-ish parsing (handles quoted names with commas) ----------
+  function parseLine(line) {
+    const out = [];
+    let cur = "", quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; } else quoted = false;
+        } else cur += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ",") { out.push(cur); cur = ""; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function parseRows(text) {
+    return text.replace(/^\uFEFF/, "").split(/\r?\n/)
+      .map((l) => l.trim()).filter(Boolean)
+      .map((l) => { const c = parseLine(l); return { full_name: (c[0] || "").trim(), email: (c[1] || "").trim() }; })
+      .filter((r, i) => !(i === 0 && r.full_name.toLowerCase() === "full_name"));
+  }
+
+  function updateCount() {
+    const n = parseRows($("list").value).length;
+    $("rowCount").textContent = n ? `${n} recipient${n === 1 ? "" : "s"} read` : "No recipients read yet";
+  }
+
+  $("list").addEventListener("input", updateCount);
+  $("csv").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    $("list").value = await file.text();
+    updateCount();
+  });
+  $("fillSample").addEventListener("click", () => {
+    if (!$("course").value) $("course").value = "Advanced Python Workshop";
+    if (!$("issuer").value) $("issuer").value = "Acme Training Corp";
+    if (!$("signatory").value) $("signatory").value = "Jane Doe";
+    if (!$("sigtitle").value) $("sigtitle").value = "Programme Director";
+    $("list").value = SAMPLE;
+    updateCount();
+  });
+
+  // ---------- error text from FastAPI / Pydantic ----------
+  function formatErrors(detail) {
+    if (typeof detail === "string") return detail;
+    if (!Array.isArray(detail)) return "The server rejected the request.";
+    return detail.map((d) => {
+      const loc = d.loc || [];
+      const msg = String(d.msg || "invalid").replace(/^Value error, /, "");
+      const at = loc.indexOf("recipients");
+      if (at >= 0 && typeof loc[at + 1] === "number") {
+        const field = loc.slice(at + 2).join(".");
+        return `Row ${loc[at + 1] + 1}${field ? " (" + field + ")" : ""}: ${msg}`;
+      }
+      const field = loc.filter((x) => x !== "body").join(".");
+      return field ? `${field}: ${msg}` : msg;
+    }).join("\n");
+  }
+
+  // Turn a failed response into a readable line. Answers from the app carry
+  // `detail`; answers from the hosting layer may not, so show their status and text.
+  async function describeFailure(res) {
+    const text = await res.text().catch(() => "");
+    let data = {};
+    try { data = JSON.parse(text); } catch (ex) { /* not JSON */ }
+    if (data.detail) return formatErrors(data.detail);
+    const msg = data.message || text.slice(0, 200) || res.statusText || "no details";
+    return `The server answered HTTP ${res.status}: ${msg}`;
+  }
+
+  // ---------- submit ----------
+  $("form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = $("formError");
+    err.textContent = "";
+
+    const course = $("course").value.trim();
+    const issuer = $("issuer").value.trim();
+    const rows = parseRows($("list").value);
+    const problems = [];
+    if (!course) problems.push("Course title is required.");
+    if (!issuer) problems.push("Issuing organisation is required.");
+    if (!rows.length) problems.push("Add at least one recipient.");
+    if (problems.length) { err.textContent = problems.join("\n"); return; }
+
+    const body = {
+      course_title: course,
+      issuer_name: issuer,
+      recipients: rows.map((r) => (r.email ? { full_name: r.full_name, email: r.email } : { full_name: r.full_name })),
+    };
+    if ($("date").value) body.issue_date = $("date").value;
+    if ($("signatory").value.trim()) body.signatory_name = $("signatory").value.trim();
+    if ($("sigtitle").value.trim()) body.signatory_title = $("sigtitle").value.trim();
+
+    $("submit").disabled = true;
+    try {
+      const res = await fetch(`${API}/certificate-jobs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.status !== 202) { err.textContent = await describeFailure(res); return; }
+      const data = await res.json();
+      openJob(data.id);
+      loadRecent();
+    } catch (ex) {
+      err.textContent = "Could not reach the server. Is it running?";
+    } finally {
+      $("submit").disabled = false;
+    }
+  });
+
+  // ---------- open & watch a batch ----------
+  function openJob(id) {
+    activeJobId = id;
+    clearTimeout(watchTimer);
+    history.replaceState(null, "", `#job=${id}`);
+    localStorage.setItem("cg:last", id);
+    $("batch").hidden = false;
+    $("ledgerWrap").hidden = false;
+    $("noBatch").hidden = true;
+    $("ledger").innerHTML = "";
+    watch();
+  }
+
+  async function watch() {
+    const id = activeJobId;
+    if (!id) return;
+    try {
+      const res = await fetch(`${API}/certificate-jobs/${id}`);
+      if (!res.ok) throw new Error(await describeFailure(res));
+      const job = await res.json();
+      if (id !== activeJobId) return;
+      renderJob(job);
+      await loadRows(id);
+      if (TERMINAL.has(job.status)) { loadRecent(); return; }
+      watchTimer = setTimeout(watch, 1000);
+    } catch (ex) {
+      if (id !== activeJobId) return;
+      $("progressNote").textContent = `Could not refresh: ${ex.message}`;
+      watchTimer = setTimeout(watch, 2500);
+    }
+  }
+
+  function renderJob(job) {
+    $("batchTitle").textContent = job.course_title;
+    $("batchMeta").textContent = `${job.issuer_name} · dated ${job.issue_date} · submitted ${fmtTime(job.created_at)}`;
+    $("batchId").textContent = `Batch ${job.id}`;
+    const status = $("jobStatus");
+    status.textContent = STATUS_LABEL[job.status] || job.status;
+    status.dataset.s = job.status;
+    $("bar").style.width = `${job.progress_pct}%`;
+    $("progressText").textContent = `${Math.round(job.progress_pct)}% processed`;
+    $("progressNote").textContent = TERMINAL.has(job.status) ? "" : "Rendering in the background";
+    $("cIssued").textContent = job.succeeded_count;
+    $("cRejected").textContent = job.failed_count;
+    $("cTotal").textContent = job.total_recipients;
+    $("jobError").textContent = job.error ? `Fatal: ${job.error}` : "";
+
+    const zip = $("zip");
+    if (TERMINAL.has(job.status) && job.succeeded_count > 0) {
+      zip.href = `${API}/certificate-jobs/${job.id}/certificates.zip`;
+      zip.hidden = false;
+    } else {
+      zip.hidden = true;
+    }
+  }
+
+  async function loadRows(id) {
+    const all = [];
+    for (let page = 1; ; page++) {
+      const res = await fetch(`${API}/certificate-jobs/${id}/recipients?page=${page}&page_size=${PAGE}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      all.push(...data.items);
+      if (data.items.length === 0 || all.length >= data.total) break;
+    }
+    if (id !== activeJobId) return;
+    renderRows(all);
+  }
+
+  function renderRows(items) {
+    if (!items.length) {
+      $("ledger").innerHTML = `<tr><td colspan="6" class="empty">No rows in this batch.</td></tr>`;
+      return;
+    }
+    $("ledger").innerHTML = items.map((r) => {
+      const reason = (r.error_message || "").replace(/^validation: /, "");
+      const file = r.certificate_url
+        ? `<a href="${esc(r.certificate_url)}" target="_blank" rel="noopener">PDF</a>`
+        : `<span class="muted">none</span>`;
+      return `<tr>
+        <td class="num">${String(r.position + 1).padStart(3, "0")}</td>
+        <td>${esc(r.full_name)}</td>
+        <td class="muted">${esc(r.email || "—")}</td>
+        <td><span class="stamp" data-status="${esc(r.status)}">${esc(ROW_LABEL[r.status] || r.status)}</span></td>
+        <td class="note">${esc(reason)}</td>
+        <td>${file}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ---------- history ----------
+  async function loadRecent() {
+    try {
+      const res = await fetch(`${API}/certificate-jobs?page_size=8`);
+      if (!res.ok) throw new Error(await describeFailure(res));
+      const data = await res.json();
+      $("recent").innerHTML = data.items.length
+        ? data.items.map((j) => `<tr>
+            <td>${esc(fmtTime(j.created_at))}</td>
+            <td>${esc(j.course_title)}</td>
+            <td>${esc(STATUS_LABEL[j.status] || j.status)}</td>
+            <td class="num">${j.succeeded_count} / ${j.total_recipients}</td>
+            <td><button class="link" data-open="${esc(j.id)}">Open</button></td>
+          </tr>`).join("")
+        : `<tr><td colspan="5" class="muted">No batches yet.</td></tr>`;
+    } catch (ex) {
+      $("recent").innerHTML = `<tr><td colspan="5" class="muted">Could not load history. ${esc(ex.message)}</td></tr>`;
+    }
+  }
+
+  $("recent").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-open]");
+    if (btn) openJob(btn.dataset.open);
+  });
+
+  window.addEventListener("hashchange", () => {
+    const m = location.hash.match(/job=([\w-]+)/);
+    if (m && m[1] !== activeJobId) openJob(m[1]);
+  });
+
+  // ---------- boot ----------
+  const d = new Date();
+  $("date").value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  loadRecent();
+  const hashMatch = location.hash.match(/job=([\w-]+)/);
+  const remembered = localStorage.getItem("cg:last");
+  if (hashMatch) openJob(hashMatch[1]);
+  else if (remembered) openJob(remembered);
+})();
+</script>
+</body>
+</html>

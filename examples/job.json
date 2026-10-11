@@ -1,0 +1,12 @@
+{
+  "course_title": "Advanced Python Workshop",
+  "issuer_name": "Acme Training Corp",
+  "issue_date": "2026-10-01",
+  "signatory_name": "Jane Doe",
+  "signatory_title": "Programme Director",
+  "recipients": [
+    {"full_name": "Alice Smith", "email": "alice@example.com"},
+    {"full_name": "Bob Jones", "email": "bob@example.com"},
+    {"full_name": "Carol White"}
+  ]
+}
